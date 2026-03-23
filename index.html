@@ -270,6 +270,8 @@
         
         let musicCache = [];
         let currentSong = null;
+        let displayLimit = 500;
+        let isShowingFullList = false;
 
         // Load JSON data
         async function loadData() {
@@ -295,8 +297,21 @@
             const container = document.getElementById('songList');
             container.innerHTML = '';
             
-            // Limit to 50 results to keep DOM light and snappy
-            const limitedList = list.slice(0, 50);
+            const term = document.getElementById('searchInput').value.trim();
+            
+            // Oculta a lista inicial e mostra apenas o botão de lista completa
+            if (!term && !isShowingFullList) {
+                container.innerHTML = `
+                    <div style="text-align:center; padding: 2rem;">
+                        <p style="margin-bottom: 1.5rem; color: var(--text-main); font-size: 1.1rem;">Pesquise uma música na barra acima ou navegue por todas as músicas.</p>
+                        <button class="btn-submit" onclick="showFullList()" style="width:auto; padding: 1rem 2rem;">VER LISTA COMPLETA</button>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Limit output
+            const limitedList = list.slice(0, displayLimit);
 
             if (limitedList.length === 0) {
                 container.innerHTML = '<p style="text-align:center; margin-top: 2rem;">Nenhuma música encontrada.</p>';
@@ -325,7 +340,7 @@
 
                 const card = document.createElement('div');
                 card.className = 'song-card';
-                card.style.animationDelay = `${index * 0.02}s`;
+                card.style.animationDelay = `${(index % 50) * 0.02}s`;
                 card.innerHTML = `
                     <div class="song-info">
                         <h3>${titulo}</h3>
@@ -335,11 +350,50 @@
                 `;
                 container.appendChild(card);
             });
+            
+            // Paginação / Carregar mais
+            if (list.length > displayLimit) {
+                const loadContainer = document.createElement('div');
+                loadContainer.style.textAlign = 'center';
+                loadContainer.style.marginTop = '2rem';
+                
+                const loadMoreBtn = document.createElement('button');
+                loadMoreBtn.className = 'btn-submit';
+                loadMoreBtn.style.width = 'auto';
+                loadMoreBtn.style.padding = '1rem 3rem';
+                loadMoreBtn.innerText = 'CARREGAR MAIS';
+                
+                // Variável local para injetar estado de busca ou não
+                loadMoreBtn.onclick = () => {
+                    displayLimit += 500;
+                    renderList(list);
+                };
+                
+                loadContainer.appendChild(loadMoreBtn);
+                container.appendChild(loadContainer);
+            }
         }
+        
+        // Functions for full list
+        window.showFullList = function() {
+            isShowingFullList = true;
+            displayLimit = 500;
+            document.getElementById('searchInput').value = '';
+            renderList(musicCache);
+        };
 
         // Search logic
         document.getElementById('searchInput').addEventListener('input', (e) => {
+            isShowingFullList = false;
+            displayLimit = 500; // Reset limite na busca
+            
             const term = e.target.value.toLowerCase();
+            
+            if (!term) {
+                renderList(musicCache); // Sem termo e não mostrando full list = mostra botão
+                return;
+            }
+            
             const filtered = musicCache.filter(m => {
                 if (typeof m === 'string') {
                     return m.toLowerCase().includes(term);
