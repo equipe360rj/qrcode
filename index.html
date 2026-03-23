@@ -15,6 +15,34 @@
             --text-light: #ffffff;
             --glass-border: rgba(102, 252, 241, 0.2);
         }
+        .toast {
+            visibility: hidden;
+            min-width: 250px;
+            background-color: var(--primary-color);
+            color: #1f2833;
+            text-align: center;
+            border-radius: 8px;
+            padding: 16px;
+            position: fixed;
+            z-index: 2000;
+            left: 50%;
+            bottom: 30px;
+            transform: translateX(-50%);
+            font-size: 1.1rem;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            transition: opacity 0.5s, bottom 0.5s;
+            opacity: 0;
+        }
+        .toast.show {
+            visibility: visible;
+            opacity: 1;
+            bottom: 50px;
+        }
+        .toast.error {
+            background-color: #ff5252;
+            color: white;
+        }
         
         * { box-sizing: border-box; margin: 0; padding: 0; }
         
@@ -262,6 +290,8 @@
             <p id="loadingMsg">Enviando pedido, aguarde...</p>
         </div>
     </div>
+    
+    <div id="toastMessage" class="toast"></div>
 
     <script>
         // === CONFIGURAÇÃO IMPRESCINDÍVEL ===
@@ -406,8 +436,27 @@
             renderList(filtered);
         });
 
+        function showToast(message, isError = false) {
+            const toast = document.getElementById("toastMessage");
+            toast.innerText = message;
+            toast.className = isError ? "toast error show" : "toast show";
+            setTimeout(() => {
+                toast.className = toast.className.replace("show", "");
+            }, 3000);
+        }
+
         // Modal functions
         function openModal(song) {
+            const lastRequestTime = localStorage.getItem('last_song_request_time');
+            if (lastRequestTime) {
+                const elapsed = Date.now() - parseInt(lastRequestTime, 10);
+                if (elapsed < 3 * 60 * 1000) {
+                    const timeLeft = Math.ceil((3 * 60 * 1000 - elapsed) / 1000);
+                    showToast(`Aguarde ${timeLeft} segundos antes de pedir de novo.`, true);
+                    return;
+                }
+            }
+            
             currentSong = song;
             document.getElementById('modalSongInfo').innerText = `${song.titulo} - ${song.artista}`;
             document.getElementById('cantorNome').value = '';
@@ -422,12 +471,12 @@
         async function submitRequest() {
             const nome = document.getElementById('cantorNome').value.trim();
             if (!nome) {
-                alert("Por favor, digite seu nome.");
+                showToast("Por favor, digite seu nome.", true);
                 return;
             }
 
             if (SCRIPT_URL === 'COLE_AQUI_A_SUA_URL_DO_APPS_SCRIPT') {
-                alert("O administrador ainda não configurou a URL do sistema (Google Apps Script).");
+                showToast("O administrador ainda não configurou a URL.", true);
                 return;
             }
 
@@ -448,14 +497,15 @@
                 
                 const result = await response.json();
                 if (result.status === "Sucesso") {
-                    alert("Seu pedido foi enviado para a fila do Karaokê! Boa sorte!");
+                    localStorage.setItem('last_song_request_time', Date.now().toString());
+                    showToast("🎵 Pedido enviado para a fila! Boa sorte!");
                     closeModal();
                 } else {
-                    alert("Ocorreu um erro: " + result.message);
+                    showToast("Ocorreu um erro: " + result.message, true);
                 }
             } catch (error) {
                 console.error("Erro no envio:", error);
-                alert("Não foi possível enviar o pedido. Tente novamente ou chame o administrador. O erro indica um problema de CORS ou rede.");
+                showToast("Falha de conexão. Tente novamente.", true);
             } finally {
                 document.getElementById('loadingMsg').style.display = 'none';
             }
