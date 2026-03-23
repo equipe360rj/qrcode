@@ -275,7 +275,14 @@
         async function loadData() {
             try {
                 const response = await fetch('musicas.json');
-                musicCache = await response.json();
+                const data = await response.json();
+                
+                // Se veio no formato de dados.json (possui "lista")
+                if (data.lista) {
+                    musicCache = data.lista;
+                } else {
+                    musicCache = data; // Formato antigo array de objetos
+                }
                 renderList(musicCache);
             } catch (error) {
                 console.error("Erro ao carregar lista de músicas:", error);
@@ -297,16 +304,34 @@
             }
 
             limitedList.forEach((song, index) => {
+                let artista = "Canção";
+                let titulo = "Desconhecido";
+                let originalStr = "";
+                
+                if (typeof song === 'string') {
+                    originalStr = song;
+                    const partes = song.split(" - ");
+                    if (partes.length >= 2) {
+                        artista = partes[0].trim();
+                        titulo = partes.slice(1).join(" - ").trim();
+                    } else {
+                        titulo = song.trim();
+                    }
+                } else {
+                    artista = song.artista || "Canção";
+                    titulo = song.titulo || "Desconhecido";
+                    originalStr = song.codigo || (artista + " - " + titulo);
+                }
+
                 const card = document.createElement('div');
                 card.className = 'song-card';
                 card.style.animationDelay = `${index * 0.02}s`;
                 card.innerHTML = `
                     <div class="song-info">
-                        <h3>${song.titulo}</h3>
-                        <p>${song.artista}</p>
-                        <span class="song-code">CÓD: ${song.codigo}</span>
+                        <h3>${titulo}</h3>
+                        <p>${artista}</p>
                     </div>
-                    <button class="btn-pedir" onclick='openModal(${JSON.stringify(song)})'>Pedir</button>
+                    <button class="btn-pedir" onclick='openModal(${JSON.stringify({artista: artista, titulo: titulo, codigo: originalStr})})'>Pedir</button>
                 `;
                 container.appendChild(card);
             });
@@ -315,11 +340,15 @@
         // Search logic
         document.getElementById('searchInput').addEventListener('input', (e) => {
             const term = e.target.value.toLowerCase();
-            const filtered = musicCache.filter(m => 
-                m.titulo.toLowerCase().includes(term) || 
-                m.artista.toLowerCase().includes(term) ||
-                m.codigo.toLowerCase().includes(term)
-            );
+            const filtered = musicCache.filter(m => {
+                if (typeof m === 'string') {
+                    return m.toLowerCase().includes(term);
+                } else {
+                    return (m.titulo || "").toLowerCase().includes(term) || 
+                           (m.artista || "").toLowerCase().includes(term) ||
+                           (m.codigo || "").toLowerCase().includes(term);
+                }
+            });
             renderList(filtered);
         });
 
