@@ -1,17 +1,8 @@
-[
-  {
-    "codigo": "1001",
-    "artista": "Chitãozinho & Xororó",
-    "titulo": "Evidências"
-  },
-  {
-    "codigo": "1002",
-    "artista": "Legião Urbana",
-    "titulo": "Tempo Perdido"
-  },
-  {
-    "codigo": "1003",
-    "artista": "Ana Carolina",
-    "titulo": "Garganta"
-  }
-]
+{
+  "data_atualizacao": "23/03/2026 16:47",
+  "lista": [
+    "14 BIS - LINDA JUVENTUDE",
+    "ADRYANA E A RAPAZIADA - EU TE AMO (AND I LOVE HER)",
+    "AGNALDO TIMOTEO - OS VERDES CAMPOS DA MINHA"
+  ]
+}
